@@ -10,6 +10,8 @@ namespace Forum.BLL.DTO
 
         public string Username { get; set; }
 
+        public string Role { get; set; }
+
         public DateTime? RegistrationDate { get; set; }
     }
 }

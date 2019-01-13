@@ -9,7 +9,7 @@ using AutoMapper;
 using Forum.API.Helpers;
 using Forum.API.Models;
 using Forum.BLL.DTO;
-using Forum.BLL.Exceptions;
+using Forum.BLL.Infrastructure;
 using Forum.BLL.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
@@ -54,7 +54,8 @@ namespace Forum.API.Controllers
                 {
                     Subject = new ClaimsIdentity(new Claim[]
                     {
-                    new Claim(ClaimTypes.Name, user.UserId.ToString())
+                        new Claim(ClaimTypes.Name, user.UserId.ToString()),
+                        new Claim(ClaimTypes.Role, user.Role)
                     }),
                     Expires = DateTime.UtcNow.AddDays(7),
                     SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
@@ -64,11 +65,12 @@ namespace Forum.API.Controllers
                 var tokenString = tokenHandler.WriteToken(token);
 
                 // return basic user info and token to store client side
-                return Ok(new UserView
+                return Ok(new
                 {
                     UserId = user.UserId,
                     Username = user.Username,
                     RegistrationDate = user.RegistrationDate,
+                    Role = user.Role,
                     Token = tokenString
                 });
             }
@@ -92,11 +94,11 @@ namespace Forum.API.Controllers
         [HttpPost("register")]
         public IActionResult Register([FromBody]RegistrationView registrationView)
         {
-            // mapping
-            var userDTO = mapper.Map<RegistrationView, UserDTO>(registrationView);
-
             try
             {
+                // mapping
+                var userDTO = mapper.Map<RegistrationView, UserDTO>(registrationView);
+
                 // save 
                 userService.Create(userDTO, registrationView.Password);
                 userService.SaveChanges();
@@ -114,7 +116,7 @@ namespace Forum.API.Controllers
             catch (Exception ex)
             {
                 // Internal Server Error
-                return StatusCode(500, ex.Message);
+                return StatusCode(500, new { ex.Message, ex.InnerException, ex.StackTrace });
             }
         }
 
@@ -123,6 +125,13 @@ namespace Forum.API.Controllers
         {
             try
             {
+                // only allow admins to access other user records
+                int currentUserId = int.Parse(User.Identity.Name);
+                if (id != currentUserId && !User.IsInRole(Role.Admin) && !User.IsInRole(Role.Moder))
+                {
+                    return Forbid("You can view only your acc data!!");
+                }
+
                 var user = userService.GetById(id);
 
                 return Ok(user);
@@ -144,17 +153,18 @@ namespace Forum.API.Controllers
         }
 
         [HttpPut("{id}")]
-        public IActionResult Update(int id, [FromBody]RegistrationView registrationView)
+        public IActionResult Update(int id, [FromBody]UserUpdateView userUpdateView)
         {
             try
             {
+                //ClaimTypes.NameIdentifier.va
                 // mapping
-                var userDTO = mapper.Map<RegistrationView, UserDTO>(registrationView);
+                var userDTO = mapper.Map<UserUpdateView, UserDTO>(userUpdateView);
 
                 userDTO.UserId = id;
 
                 // save 
-                userService.Update(userDTO, registrationView.Password);
+                userService.Update(userDTO, userUpdateView.Password);
                 userService.SaveChanges();
 
                 return Ok();

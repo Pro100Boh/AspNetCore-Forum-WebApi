@@ -6,18 +6,17 @@ using System.Text;
 
 namespace Forum.DAL.Entities
 {
-    [Table("Posts")]
-    public class Post
+    public class Comment
     {
         // int?
         [Key, DatabaseGenerated(DatabaseGeneratedOption.Identity)]
+        public int CommentId { get; set; }
+
+        [Required]
         public int PostId { get; set; }
 
         [Required]
         public int UserId { get; set; }
-
-        [Required, MaxLength(200)]
-        public string Header { get; set; }
 
         [Required, MaxLength(1500)]
         public string Content { get; set; }

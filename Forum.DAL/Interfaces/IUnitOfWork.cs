@@ -11,6 +11,8 @@ namespace Forum.DAL.Interfaces
 
         IRepository<User> Users { get; }
 
+        IRepository<Comment> Comments { get; }
+
         void Save();
     }
 }

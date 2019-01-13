@@ -16,6 +16,10 @@ namespace Forum.BLL.Helpers
 
             CreateMap<User, UserDTO>();
             CreateMap<UserDTO, User>();
+
+            CreateMap<Comment, CommentDTO>();
+            CreateMap<CommentDTO, Comment>();
+
         }
     }
 }

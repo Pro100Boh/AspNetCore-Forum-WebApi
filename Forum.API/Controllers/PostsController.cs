@@ -5,9 +5,10 @@ using System.Threading.Tasks;
 using AutoMapper;
 using Forum.API.Models;
 using Forum.BLL.DTO;
-using Forum.BLL.Exceptions;
+using Forum.BLL.Infrastructure;
 using Forum.BLL.Interfaces;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 
 namespace Forum.API.Controllers
 {
@@ -24,14 +25,6 @@ namespace Forum.API.Controllers
             postsService = service;
             this.mapper = mapper;
         }
-
-        /*
-        [HttpGet]
-        public ActionResult<IEnumerable<string>> Get()
-        {
-            return new string[] { "value1", "value2" };
-        }
-        */
 
         [HttpGet("page/{page}")]
         public IActionResult GetPostsAtPage(int page)
@@ -81,6 +74,91 @@ namespace Forum.API.Controllers
             }
         }
 
+        // GET api/posts/5/comments
+        [HttpGet("{id}/comments")]
+        public IActionResult GetComments(int id)
+        {
+            try
+            {
+                var post = postsService.GetPost(id);
+
+                if (post == null)
+                {
+                    return NotFound();
+                }
+                var postView = mapper.Map<PostDTO, PostView>(post);
+
+                return Ok(postView);
+            }
+            catch (ArgumentOutOfRangeException ex)
+            {
+                return BadRequest(ex.Message);
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ex.Message); // internal server error
+            }
+        }
+
+        [Authorize]
+        [HttpPost("{postId}/comments")]
+        public IActionResult AddComment(CommentView commentView)
+        {
+            try
+            {
+                var commentDTO = mapper.Map<CommentView, CommentDTO>(commentView);
+
+                postsService.AddComment(commentDTO);
+
+                postsService.SaveChanges();
+
+                return Ok();
+            }
+            catch (ArgumentOutOfRangeException ex)
+            {
+                return BadRequest(ex.Message);
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ex.Message); // internal server error
+            }
+        }
+
+        [Authorize(Roles = Role.AdminOrModer)]
+        [HttpDelete("comments/{commentId}")]
+        public IActionResult DeleteComment(int commentId)
+        {
+            try
+            {
+                postsService.DeleteCommnet(commentId);
+
+                postsService.SaveChanges();
+
+                return Ok();
+            }
+            catch (ArgumentOutOfRangeException ex)
+            {
+                return BadRequest(ex.Message);
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ex.Message); // internal server error
+            }
+        }
+
+        [Authorize]
         [HttpPost]
         public IActionResult CreatePost([FromBody]PostView post)
         {
@@ -106,7 +184,7 @@ namespace Forum.API.Controllers
         }
 
         // TODO by id put best
-
+        [Authorize]
         [HttpPut]
         public IActionResult EditPost([FromBody]PostView post)
         {
@@ -135,8 +213,9 @@ namespace Forum.API.Controllers
         }
 
         // DELETE api/values/5
+        [Authorize(Roles = Role.AdminOrModer)]
         [HttpDelete("{id}")]
-        public IActionResult Delete(int id)
+        public IActionResult DeletePost(int id)
         {
             try
             {

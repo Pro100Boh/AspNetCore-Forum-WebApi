@@ -15,6 +15,9 @@ namespace Forum.DAL.Entities
         [Required, MaxLength(50)]
         public string Username { get; set; }
 
+        [Required, MaxLength(25)]
+        public string Role { get; set; }
+
         [Required]
         public DateTime RegistrationDate { get; set; }
 

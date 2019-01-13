@@ -15,6 +15,8 @@ namespace Forum.DAL.Repositories
 
         private UsersRepository usersRepository;
 
+        private CommentsRepository commentsRepository;
+
         public EFUnitOfWork()
         {
             db = new ForumContext();
@@ -29,6 +31,18 @@ namespace Forum.DAL.Repositories
                     postsRepository = new PostsRepository(db);
                 }
                 return postsRepository;
+            }
+        }
+
+        public IRepository<Comment> Comments
+        {
+            get
+            {
+                if (commentsRepository == null)
+                {
+                    commentsRepository = new CommentsRepository(db);
+                }
+                return commentsRepository;
             }
         }
 

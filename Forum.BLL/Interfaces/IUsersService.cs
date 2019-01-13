@@ -14,7 +14,7 @@ namespace Forum.BLL.Interfaces
 
         UserDTO Create(UserDTO user, string password);
 
-        void Update(UserDTO user, string password = null);
+        void Update(UserDTO user, string password, string newPassword = null);
 
         void Delete(int id);
 

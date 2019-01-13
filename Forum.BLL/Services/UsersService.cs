@@ -1,6 +1,6 @@
 ﻿using AutoMapper;
 using Forum.BLL.DTO;
-using Forum.BLL.Exceptions;
+using Forum.BLL.Infrastructure;
 using Forum.BLL.Interfaces;
 using Forum.DAL.Entities;
 using Forum.DAL.Interfaces;
@@ -74,7 +74,7 @@ namespace Forum.BLL.Services
                 throw new ArgumentException("Invalid password", nameof(password));
             if (!IsValidUsername(userDTO.Username))
                 throw new ArgumentException("Invalid username", nameof(userDTO.Username));
-            if (!IsFreeUsername(userDTO.Username))
+            if (IsUsernameAlreadyTaken(userDTO.Username))
                 throw new ArgumentException($"Username {userDTO.Username} is already taken");
 
             // UserId is database generated
@@ -83,8 +83,10 @@ namespace Forum.BLL.Services
             // Set registration date as current date
             userDTO.RegistrationDate = DateTime.Now;
 
-            byte[] passwordHash, passwordSalt;
-            CreatePasswordHash(password, out passwordHash, out passwordSalt);
+            //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+            userDTO.Role = Role.Admin;
+
+            CreatePasswordHash(password, out byte[] passwordHash, out byte[] passwordSalt);
 
             var user = mapper.Map<UserDTO, User>(userDTO);
 
@@ -96,7 +98,7 @@ namespace Forum.BLL.Services
             return userDTO;
         }
 
-        public void Update(UserDTO userDTO, string password = null)
+        public void Update(UserDTO userDTO, string password, string newPassword = null)
         {
             // validation
             if (userDTO == null)
@@ -108,41 +110,48 @@ namespace Forum.BLL.Services
             if (userDTO.UserId < 1)
                 throw new ArgumentException($"Id cannot be zero or negative: {userDTO.UserId}", nameof(userDTO.UserId));
 
-            var originalUser = uow.Users.Get((int)userDTO.UserId);
+            var user = uow.Users.GetAll().SingleOrDefault(u => u.UserId == userDTO.UserId);
 
-            userDTO.RegistrationDate = originalUser.RegistrationDate;
+            // check if user exists
+            if (user == null)
+                throw new ArgumentException("Wrong password or user Id");
+
+            // check if password is correct
+            if (!VerifyPasswordHash(password, user.PasswordHash, user.PasswordSalt))
+                throw new ArgumentException("Wrong password", nameof(password));
+
+            userDTO.RegistrationDate = user.RegistrationDate;
 
             if (userDTO.Username == null)
-                userDTO.Username = originalUser.Username;
+                userDTO.Username = user.Username;
             else if (!IsValidUsername(userDTO.Username))
                 throw new ArgumentException("Invalid username", nameof(userDTO.Username));
-            else if (!IsFreeUsername(userDTO.Username))
+            else if (IsUsernameAlreadyTaken(userDTO.Username))
                 throw new ArgumentException($"Username {userDTO.Username} is already taken");
 
             userDTO.UserId = null;
 
-            var user = mapper.Map<UserDTO, User>(userDTO);
+            var updatedUser = mapper.Map<UserDTO, User>(userDTO);
 
             // update password if it was entered
-            if (password != null)
+            if (newPassword != null)
             {
-                if (!IsValidPassword(password))
+                if (!IsValidPassword(newPassword))
                     throw new ArgumentException("Invalid password");
 
-                byte[] passwordHash, passwordSalt;
-                CreatePasswordHash(password, out passwordHash, out passwordSalt);
+                CreatePasswordHash(newPassword, out byte[] passwordHash, out byte[] passwordSalt);
 
-                user.PasswordHash = passwordHash;
-                user.PasswordSalt = passwordSalt;
+                updatedUser.PasswordHash = passwordHash;
+                updatedUser.PasswordSalt = passwordSalt;
             }
 
-            uow.Users.Update(user);
+            uow.Users.Update(updatedUser);
         }
 
         public void Delete(int userId)
         {
             if (userId < 1)
-                throw new ArgumentOutOfRangeException($"Id cannot be zero or negative: {userId}", nameof(userId)); // id exc
+                throw new ArgumentOutOfRangeException($"Id cannot be zero or negative: {userId}", nameof(userId)); 
 
             uow.Users.Delete(userId);
 
@@ -213,7 +222,7 @@ namespace Forum.BLL.Services
             return Regex.IsMatch(password, @"(?!^[0-9]*$)(?!^[a-zA-Z]*$)^([a-zA-Z0-9]{6,15})$");
         }
 
-        private bool IsFreeUsername(string username)
+        private bool IsUsernameAlreadyTaken(string username)
         {
             return uow.Users.GetAll().Any(u => u.Username == username);
         }
