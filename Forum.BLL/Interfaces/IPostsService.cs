@@ -9,13 +9,15 @@ namespace Forum.BLL.Interfaces
     {
         PostDTO GetPost(int postId);
 
-        void AddComment(CommentDTO commentDTO);
+        CommentDTO AddComment(CommentDTO commentDTO);
 
         void DeleteCommnet(int commentId);
 
+        IEnumerable<CommentDTO> GetPostComments(int postId);
+
         IEnumerable<PostDTO> GetPostsAtPage(int page);
 
-        void CreatePost(PostDTO postDTO);
+        PostDTO CreatePost(PostDTO postDTO);
 
         void EditPost(PostDTO postDTO);
 

@@ -1,6 +1,7 @@
 ﻿using Forum.DAL.EF;
 using Forum.DAL.Entities;
 using Forum.DAL.Interfaces;
+using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -34,7 +35,7 @@ namespace Forum.DAL.Repositories
 
         public void Update(Comment comment)
         {
-            //db.Entry(comment).State = EntityState.Deleted;
+            db.Entry(comment).State = EntityState.Deleted;
 
             db.Comments.Update(comment);
         }

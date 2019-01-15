@@ -8,6 +8,8 @@ namespace Forum.BLL.DTO
     {
         public int? PostId { get; set; }
 
+        public int? UserId { get; set; }
+
         public string Header { get; set; }
 
         public string Content { get; set; }

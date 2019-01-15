@@ -15,11 +15,4 @@ namespace Forum.BLL.Infrastructure
         public const string AdminOrModer = "Admin,Moder";
     }
 
-    /*
-    public enum Role
-    {
-        Admin = 1, Moder = 2, User = 3,
-    }*/
-
-    //$"{Role.Admin},{Role.Moder}"
 }

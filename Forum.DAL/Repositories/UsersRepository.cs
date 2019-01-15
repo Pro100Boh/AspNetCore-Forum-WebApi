@@ -35,7 +35,7 @@ namespace Forum.DAL.Repositories
 
         public void Update(User user)
         {
-            //db.Entry(user).State = EntityState.Deleted;
+            db.Entry(user).State = EntityState.Deleted;
 
             db.Users.Update(user);
         }

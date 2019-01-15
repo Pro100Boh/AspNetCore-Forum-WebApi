@@ -15,6 +15,5 @@ namespace Forum.API.Models
 
         public DateTime? RegistrationDate { get; set; }
 
-        public string Token { get; set; }
     }
 }

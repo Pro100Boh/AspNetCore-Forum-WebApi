@@ -51,6 +51,7 @@ namespace Forum.BLL.Services
 
         public UserDTO GetById(int userId)
         {
+            // validation
             if (userId < 1)
                 throw new ArgumentOutOfRangeException($"User Id cannot be zero or negative - {userId}");
 
@@ -78,13 +79,13 @@ namespace Forum.BLL.Services
                 throw new ArgumentException($"Username {userDTO.Username} is already taken");
 
             // UserId is database generated
-            userDTO.UserId = null;
+            userDTO.UserId = 0;
 
             // Set registration date as current date
             userDTO.RegistrationDate = DateTime.Now;
 
-            //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-            userDTO.Role = Role.Admin;
+            // User role by default
+            userDTO.Role = Role.User;
 
             CreatePasswordHash(password, out byte[] passwordHash, out byte[] passwordSalt);
 
@@ -104,9 +105,6 @@ namespace Forum.BLL.Services
             if (userDTO == null)
                 throw new ArgumentNullException(nameof(userDTO));
 
-            if (userDTO.UserId == null)
-                throw new ArgumentNullException(nameof(userDTO.UserId));
-
             if (userDTO.UserId < 1)
                 throw new ArgumentException($"Id cannot be zero or negative: {userDTO.UserId}", nameof(userDTO.UserId));
 
@@ -122,6 +120,7 @@ namespace Forum.BLL.Services
 
             userDTO.RegistrationDate = user.RegistrationDate;
 
+            // if username changes - validation and check if username already taken
             if (userDTO.Username == null)
                 userDTO.Username = user.Username;
             else if (!IsValidUsername(userDTO.Username))
@@ -129,7 +128,8 @@ namespace Forum.BLL.Services
             else if (IsUsernameAlreadyTaken(userDTO.Username))
                 throw new ArgumentException($"Username {userDTO.Username} is already taken");
 
-            userDTO.UserId = null;
+            // UserId is database generated
+            userDTO.UserId = 0;
 
             var updatedUser = mapper.Map<UserDTO, User>(userDTO);
 
@@ -150,11 +150,11 @@ namespace Forum.BLL.Services
 
         public void Delete(int userId)
         {
+            // validation
             if (userId < 1)
                 throw new ArgumentOutOfRangeException($"Id cannot be zero or negative: {userId}", nameof(userId)); 
 
             uow.Users.Delete(userId);
-
         }
 
         public void Dispose()

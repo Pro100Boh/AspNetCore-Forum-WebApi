@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 
 namespace Forum.API.Models
 {
+    /*
     public class PostView
     {
         public int? PostId { get; set; }
@@ -16,4 +17,5 @@ namespace Forum.API.Models
         public DateTime? Published { get; set; }
 
     }
+    */
 }

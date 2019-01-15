@@ -12,16 +12,14 @@ namespace Forum.API.Helpers
     {
         public AutoMapperProfile()
         {
+            /*
             CreateMap<PostDTO, PostView>();
             CreateMap<PostView, PostDTO>();
+            */
             CreateMap<RegistrationView, UserDTO>();
             CreateMap<UserUpdateView, UserDTO>().
                 ForMember(dest => dest.Username,
                           opts => opts.MapFrom(src => src.NewUsername));
-
-            /*AutoMapper.Mapper.CreateMap<Book, BadBookViewModel>()
-    .ForMember(dest => dest.BookTitle,
-               opts => opts.MapFrom(src => src.Title));*/
 
         }
     }

@@ -9,12 +9,12 @@ namespace Forum.DAL.Entities
     [Table("Posts")]
     public class Post
     {
-        // int?
         [Key, DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public int PostId { get; set; }
 
-        [Required]
         public int UserId { get; set; }
+
+        public User User { get; set; }
 
         [Required, MaxLength(200)]
         public string Header { get; set; }
@@ -24,5 +24,7 @@ namespace Forum.DAL.Entities
 
         [Required]
         public DateTime Published { get; set; }
+
+        public ICollection<Comment> Comments { get; set; }
     }
 }

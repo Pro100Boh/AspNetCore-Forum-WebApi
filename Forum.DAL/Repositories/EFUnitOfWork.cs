@@ -63,6 +63,7 @@ namespace Forum.DAL.Repositories
             db.SaveChanges();
         }
 
+
         private bool disposed = false;
 
         public virtual void Dispose(bool disposing)
@@ -82,5 +83,11 @@ namespace Forum.DAL.Repositories
             Dispose(true);
             GC.SuppressFinalize(this);
         }
+
+        ~EFUnitOfWork()
+        {
+            Dispose(false);
+        }
+
     }
 }

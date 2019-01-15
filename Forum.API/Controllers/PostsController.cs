@@ -16,9 +16,9 @@ namespace Forum.API.Controllers
     [ApiController]
     public class PostsController : ControllerBase
     {
-        private IPostsService postsService;
+        private readonly IPostsService postsService;
 
-        private IMapper mapper;
+        private readonly IMapper mapper;
 
         public PostsController(IPostsService service, IMapper mapper)
         {
@@ -33,9 +33,11 @@ namespace Forum.API.Controllers
             {
                 var posts = postsService.GetPostsAtPage(page);
 
-                var postsView = mapper.Map<IEnumerable<PostDTO>, IEnumerable<PostView>>(posts);
-
-                return Ok(postsView);
+                return Ok(posts);
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(ex.Message);
             }
             catch (Exception ex)
             {
@@ -50,23 +52,17 @@ namespace Forum.API.Controllers
         {
             try
             {
-                var post = postsService.GetPost(id);
+                var postDTO = postsService.GetPost(id);
 
-                if (post == null)
-                {
-                    return NotFound();
-                }
-                var postView = mapper.Map<PostDTO, PostView>(post);
-
-                return Ok(postView);
-            }
-            catch (ArgumentOutOfRangeException ex)
-            {
-                return BadRequest(ex.Message);
+                return Ok(postDTO);
             }
             catch (ArgumentException ex)
             {
                 return BadRequest(ex.Message);
+            }
+            catch (NotFoundInDbException ex)
+            {
+                return NotFound(ex.Message);
             }
             catch (Exception ex)
             {
@@ -80,23 +76,17 @@ namespace Forum.API.Controllers
         {
             try
             {
-                var post = postsService.GetPost(id);
+                var commnets = postsService.GetPostComments(id);
 
-                if (post == null)
-                {
-                    return NotFound();
-                }
-                var postView = mapper.Map<PostDTO, PostView>(post);
-
-                return Ok(postView);
-            }
-            catch (ArgumentOutOfRangeException ex)
-            {
-                return BadRequest(ex.Message);
+                return Ok(commnets);
             }
             catch (ArgumentException ex)
             {
                 return BadRequest(ex.Message);
+            }
+            catch (NotFoundInDbException notFoundEx)
+            {
+                return BadRequest(notFoundEx.Message);
             }
             catch (Exception ex)
             {
@@ -106,25 +96,29 @@ namespace Forum.API.Controllers
 
         [Authorize]
         [HttpPost("{postId}/comments")]
-        public IActionResult AddComment(CommentView commentView)
+        public IActionResult AddComment(int postId, [FromBody]CommentDTO commentDTO)
         {
             try
             {
-                var commentDTO = mapper.Map<CommentView, CommentDTO>(commentView);
+                int currentUserId = int.Parse(User.Identity.Name);
 
-                postsService.AddComment(commentDTO);
+                commentDTO.PostId = postId;
+
+                commentDTO.UserId = currentUserId;
+
+                var comment = postsService.AddComment(commentDTO);
 
                 postsService.SaveChanges();
 
-                return Ok();
-            }
-            catch (ArgumentOutOfRangeException ex)
-            {
-                return BadRequest(ex.Message);
+                return Created($"posts/{comment.PostId}/comments", comment);
             }
             catch (ArgumentException ex)
             {
                 return BadRequest(ex.Message);
+            }
+            catch (NotFoundInDbException notFoundEx)
+            {
+                return BadRequest(notFoundEx.Message);
             }
             catch (Exception ex)
             {
@@ -144,13 +138,13 @@ namespace Forum.API.Controllers
 
                 return Ok();
             }
-            catch (ArgumentOutOfRangeException ex)
-            {
-                return BadRequest(ex.Message);
-            }
             catch (ArgumentException ex)
             {
                 return BadRequest(ex.Message);
+            }
+            catch (NotFoundInDbException notFoundEx)
+            {
+                return BadRequest(notFoundEx.Message);
             }
             catch (Exception ex)
             {
@@ -160,19 +154,21 @@ namespace Forum.API.Controllers
 
         [Authorize]
         [HttpPost]
-        public IActionResult CreatePost([FromBody]PostView post)
+        public IActionResult CreatePost([FromBody]PostDTO postDTO)
         {
             try
             {
-                var productDTO = mapper.Map<PostView, PostDTO>(post);
+                int currentUserId = int.Parse(User.Identity.Name);
 
-                postsService.CreatePost(productDTO);
+                postDTO.UserId = currentUserId;
+
+                var createdPost = postsService.CreatePost(postDTO);
 
                 postsService.SaveChanges();
 
-                return Ok();
+                return Created($"posts/{createdPost.PostId}", createdPost);
             }
-            catch (ArgumentNullException ex)
+            catch (ArgumentException ex)
             {
                 return BadRequest(ex.Message);
             }
@@ -186,11 +182,13 @@ namespace Forum.API.Controllers
         // TODO by id put best
         [Authorize]
         [HttpPut]
-        public IActionResult EditPost([FromBody]PostView post)
+        public IActionResult EditPost([FromBody]PostDTO postDTO)
         {
             try
             {
-                var postDTO = mapper.Map<PostView, PostDTO>(post);
+                int currentUserId = int.Parse(User.Identity.Name);
+
+                postDTO.UserId = currentUserId;
 
                 postsService.EditPost(postDTO);
 
@@ -198,11 +196,11 @@ namespace Forum.API.Controllers
 
                 return Ok();
             }
-            catch (ArgumentOutOfRangeException ex)
+            catch (ArgumentException ex)
             {
                 return BadRequest(ex.Message);
             }
-            catch (ArgumentException ex)
+            catch (NotFoundInDbException ex)
             {
                 return BadRequest(ex.Message);
             }
@@ -225,11 +223,11 @@ namespace Forum.API.Controllers
 
                 return Ok();
             }
-            catch (ArgumentOutOfRangeException ex)
+            catch (ArgumentException ex)
             {
                 return BadRequest(ex.Message);
             }
-            catch (ArgumentException ex)
+            catch (NotFoundInDbException ex)
             {
                 return BadRequest(ex.Message);
             }

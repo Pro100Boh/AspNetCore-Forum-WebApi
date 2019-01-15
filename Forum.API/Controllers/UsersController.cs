@@ -47,6 +47,7 @@ namespace Forum.API.Controllers
             {
                 var user = userService.Authenticate(authenticationView.Username, authenticationView.Password);
 
+                // jwt config
                 var tokenHandler = new JwtSecurityTokenHandler();
                 var key = Encoding.ASCII.GetBytes(appSettings.Secret);
 
@@ -67,20 +68,20 @@ namespace Forum.API.Controllers
                 // return basic user info and token to store client side
                 return Ok(new
                 {
-                    UserId = user.UserId,
-                    Username = user.Username,
-                    RegistrationDate = user.RegistrationDate,
-                    Role = user.Role,
+                    user.UserId,
+                    user.Username,
+                    user.RegistrationDate,
+                    user.Role,
                     Token = tokenString
                 });
             }
-            catch (ArgumentException argEx)
+            catch (ArgumentException ex)
             {
-                return BadRequest(argEx.Message);
+                return BadRequest(ex.Message);
             }
-            catch (NotFoundInDbException notFoundEx)
+            catch (NotFoundInDbException ex)
             {
-                return BadRequest(notFoundEx.Message);
+                return BadRequest(ex.Message);
             }
             catch (Exception ex)
             {
@@ -105,10 +106,6 @@ namespace Forum.API.Controllers
 
                 return Ok();
             }
-            catch (ArgumentOutOfRangeException argOutOfRangeEx)
-            {
-                return BadRequest(argOutOfRangeEx.Message);
-            }
             catch (ArgumentException argEx)
             {
                 return BadRequest(argEx.Message);
@@ -119,6 +116,8 @@ namespace Forum.API.Controllers
                 return StatusCode(500, new { ex.Message, ex.InnerException, ex.StackTrace });
             }
         }
+
+        //[HttpGet("{userId}/givemoder")]
 
         [HttpGet("{id}")]
         public IActionResult GetById(int id)
@@ -136,13 +135,13 @@ namespace Forum.API.Controllers
 
                 return Ok(user);
             }
-            catch (ArgumentOutOfRangeException argOutOfRangeEx)
+            catch (ArgumentException argEx)
             {
-                return BadRequest(argOutOfRangeEx.Message);
+                return BadRequest(argEx.Message);
             }
-            catch (NotFoundInDbException notFoundEx)
+            catch (NotFoundInDbException ex)
             {
-                return BadRequest(notFoundEx.Message);
+                return BadRequest(ex.Message);
             }
             catch (Exception ex)
             {
@@ -157,25 +156,23 @@ namespace Forum.API.Controllers
         {
             try
             {
-                //ClaimTypes.NameIdentifier.va
                 // mapping
                 var userDTO = mapper.Map<UserUpdateView, UserDTO>(userUpdateView);
 
                 userDTO.UserId = id;
 
-                // save 
                 userService.Update(userDTO, userUpdateView.Password);
                 userService.SaveChanges();
 
                 return Ok();
             }
-            catch (ArgumentNullException argNullEx)
-            {
-                return BadRequest(argNullEx.Message);
-            }
             catch (ArgumentException argEx)
             {
                 return BadRequest(argEx.Message);
+            }
+            catch (NotFoundInDbException ex)
+            {
+                return BadRequest(ex.Message);
             }
             catch (Exception ex)
             {
@@ -187,10 +184,26 @@ namespace Forum.API.Controllers
         [HttpDelete("{id}")]
         public IActionResult Delete(int id)
         {
-            userService.Delete(id);
-            userService.SaveChanges();
+            try
+            {
+                userService.Delete(id);
+                userService.SaveChanges();
 
-            return Ok();
+                return Ok();
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(ex.Message);
+            }
+            catch (NotFoundInDbException ex)
+            {
+                return BadRequest(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                // Internal Server Error
+                return StatusCode(500, ex.Message);
+            }
         }
     }
 }

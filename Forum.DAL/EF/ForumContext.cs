@@ -16,28 +16,35 @@ namespace Forum.DAL.EF
 
         public ForumContext()
         {
-            //Database.Migrate();
             Database.EnsureCreated();
         }
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
-            optionsBuilder.UseSqlServer(@"Server=(localdb)\mssqllocaldb;Database=ForumDBv3;Trusted_Connection=True;");
+            optionsBuilder.UseSqlServer(@"Server=(localdb)\mssqllocaldb;Database=ForumDB;Trusted_Connection=True;");
         }
 
-        /*
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
-            modelBuilder.Entity<Role>().HasData(
-                new Role[]
-                {
-                    new Role { RoleId = 1, RoleName = "Admin" },
-                    new Role { RoleId = 2, RoleName = "Moder" },
-                    new Role { RoleId = 3, RoleName = "User" },
-                });
 
-            base.OnModelCreating(modelBuilder);
+            modelBuilder.Entity<Comment>()
+                .HasOne<Post>(c => c.Post)
+                .WithMany(p => p.Comments)
+                .HasForeignKey(c => c.PostId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<Post>()
+                .HasOne<User>(p => p.User)
+                .WithMany(u => u.Posts)
+                .HasForeignKey(p => p.UserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<Comment>()
+                .HasOne<User>(p => p.User)
+                .WithMany(u => u.Comments)
+                .HasForeignKey(p => p.UserId)
+                .OnDelete(DeleteBehavior.Restrict);
         }
-        */
+
     }
 }

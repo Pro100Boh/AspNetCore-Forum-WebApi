@@ -6,9 +6,9 @@ using System.Text;
 
 namespace Forum.DAL.Entities
 {
+    [Table("Users")]
     public class User
     {
-        // int?
         [Key, DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public int UserId { get; set; }
 
@@ -26,5 +26,9 @@ namespace Forum.DAL.Entities
 
         [Required]
         public byte[] PasswordSalt { get; set; }
+
+        public ICollection<Post> Posts { get; set; }
+
+        public ICollection<Comment> Comments { get; set; }
     }
 }

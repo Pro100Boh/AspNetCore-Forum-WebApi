@@ -18,14 +18,13 @@ namespace Forum.BLL.Services
 
         private readonly IMapper mapper;
 
-        private const int postsPerPage = 10;  // Max count of posts on 1 page
+        private const int postsPerPage = 10;  // Max count of posts at one page
         
         public PostsService(IUnitOfWork uow, IMapper mapper)
         {
             this.uow = uow;
             this.mapper = mapper;
-        }
-        
+        }      
 
         public PostDTO GetPost(int postId)
         {
@@ -39,52 +38,6 @@ namespace Forum.BLL.Services
                 throw new NotFoundInDbException("Post not found");
 
             return mapper.Map<Post, PostDTO>(post);
-        }
-
-        public IEnumerable<CommentDTO> GetPostComments(int postId)
-        {
-            // validation
-            if (postId < 1)
-                throw new ArgumentOutOfRangeException($"Post Id cannot be zero or negative: {postId}");
-
-            IEnumerable<Comment> commnets = uow.Comments.GetAll().
-                                            Where(c => c.PostId == postId).
-                                            OrderByDescending(c => c.Published).
-                                            ToList();
-
-            return mapper.Map<IEnumerable<Comment>, IEnumerable<CommentDTO>>(commnets);
-        }
-
-        public void AddComment(CommentDTO commentDTO)
-        {
-            // validation
-            if (commentDTO == null)
-                throw new ArgumentNullException(nameof(commentDTO));
-
-            if (commentDTO.Content == null)
-                throw new ArgumentNullException(nameof(commentDTO.Content));
-
-            if (commentDTO.UserId < 1)
-                throw new ArgumentOutOfRangeException($"User Id cannot be zero or negative: {commentDTO.UserId}");
-
-            GetPost(commentDTO.PostId);
-
-            commentDTO.Published = DateTime.Now;
-
-            commentDTO.CommentId = null;
-
-            var comment = mapper.Map<CommentDTO, Comment>(commentDTO);
-
-            uow.Comments.Create(comment);
-        }
-
-        public void DeleteCommnet(int commentId)
-        {
-            // validation
-            if (commentId < 1)
-                throw new ArgumentOutOfRangeException($"Comment Id cannot be zero or negative: {commentId}");
-
-            uow.Posts.Delete(commentId);
         }
 
         public IEnumerable<PostDTO> GetPostsAtPage(int page)
@@ -102,7 +55,58 @@ namespace Forum.BLL.Services
             return mapper.Map<IEnumerable<Post>, IEnumerable<PostDTO>>(posts);
         }
 
-        public void CreatePost(PostDTO postDTO)
+        public IEnumerable<CommentDTO> GetPostComments(int postId)
+        {
+            GetPost(postId);
+
+            IEnumerable<Comment> commnets = uow.Comments.GetAll().
+                                            Where(c => c.PostId == postId).
+                                            OrderByDescending(c => c.Published).
+                                            ToList();
+
+            return mapper.Map<IEnumerable<Comment>, IEnumerable<CommentDTO>>(commnets);
+        }
+
+        public CommentDTO AddComment(CommentDTO commentDTO)
+        {
+            // validation
+            if (commentDTO == null)
+                throw new ArgumentNullException(nameof(commentDTO));
+
+            if (commentDTO.Content == null)
+                throw new ArgumentNullException(nameof(commentDTO.Content));
+
+            if (commentDTO.UserId == null)
+                throw new ArgumentNullException(nameof(commentDTO.UserId));
+
+            if (commentDTO.UserId < 1)
+                throw new ArgumentOutOfRangeException($"User Id cannot be zero or negative: {commentDTO.UserId}");
+
+            GetPost((int)commentDTO.PostId);
+
+            // Set current time
+            commentDTO.Published = DateTime.Now;
+
+            // CommentId is database generated
+            commentDTO.CommentId = 0;
+
+            var comment = mapper.Map<CommentDTO, Comment>(commentDTO);
+
+            uow.Comments.Create(comment);
+
+            return mapper.Map<Comment, CommentDTO>(comment);
+        }
+
+        public void DeleteCommnet(int commentId)
+        {
+            // validation
+            if (commentId < 1)
+                throw new ArgumentOutOfRangeException($"Comment Id cannot be zero or negative: {commentId}");
+
+            uow.Posts.Delete(commentId);
+        }
+
+        public PostDTO CreatePost(PostDTO postDTO)
         {
             // validation
             if (postDTO.Content == null)
@@ -111,27 +115,44 @@ namespace Forum.BLL.Services
             if (postDTO.Header == null)
                 throw new ArgumentNullException(nameof(postDTO.Header));
 
-            postDTO.PostId = null;
+            if (postDTO.UserId == null)
+                throw new ArgumentNullException(nameof(postDTO.UserId));
+
+            if (postDTO.UserId < 1)
+                throw new ArgumentOutOfRangeException($"User Id cannot be zero or negative: {postDTO.UserId}");
+
+            // PostId is database generated
+            postDTO.PostId = 0;
 
             postDTO.Published = DateTime.Now;
 
             var post = mapper.Map<PostDTO, Post>(postDTO);
 
             uow.Posts.Create(post);
+
+            return mapper.Map<Post, PostDTO>(post);
         }
 
         public void EditPost(PostDTO postDTO)
         {
             // validation
-            if (postDTO.PostId == null)
-                throw new ArgumentNullException(nameof(postDTO.PostId));
+            if (postDTO == null)
+                throw new ArgumentNullException(nameof(postDTO));
 
             if (postDTO.PostId < 1)
                 throw new ArgumentOutOfRangeException($"Post Id cannot be zero or negative: {postDTO.PostId}");
 
+            if (postDTO.UserId == null)
+                throw new ArgumentNullException(nameof(postDTO.UserId));
+
+            // get not modified post
             var originalPost = uow.Posts.Get((int)postDTO.PostId);
 
+            // Check if user is author of curr post
+            if (postDTO.UserId != originalPost.UserId)
+                throw new ArgumentException("Only author of post can edit it");
 
+            // publishing time does not changes
             postDTO.Published = originalPost.Published;
 
             if (postDTO.Header == null)
