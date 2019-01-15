@@ -1,1 +1,1 @@
-# Project is not completely ready!
+# Example of simple web-forum API
